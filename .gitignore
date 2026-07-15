@@ -104,3 +104,15 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# # 忽略根目录下的所有文件和文件夹
+# /*
+
+# # 放行 .gitignore 自身
+# !.gitignore
+
+# # 放行 Scripts 文件夹
+# !/Scripts/
+
+# # 递归放行 Scripts 内的所有内容
+# !/Scripts/**
