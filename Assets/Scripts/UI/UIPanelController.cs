@@ -37,14 +37,11 @@ public class UIPanelController
     {
         isloaded = true;
 
-        // yield return YooAssetsLoad.Instance.InitializeRemotePackageCoroutine(packageName,"URL");
-        // yield return YooAssetsLoad.Instance.InitializeEditorPackageCoroutine(packageName);
-
         GameObject loadedGo = null;
         bool isComplete = false;
 
         YooAsset.InstantiateOptions options = new YooAsset.InstantiateOptions(false, layer, false);
-        YooAssetsLoad.Instance.LoadResources(panelName, options, (go) =>
+        YooAssetsLoad.Instance.LoadPrefab(panelName, options, (go) =>
         {
             loadedGo = go;
             if (go == null) return;

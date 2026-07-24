@@ -8,33 +8,8 @@ using YooAsset;
 /// Singleton helper for initializing YooAssets and loading/unloading package assets.
 /// Provides simple local and remote package initialization, sync/async load, instantiate support, and resource cleanup.
 /// </summary>
-public class YooAssetsLoad : MonoBehaviour
+public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
 {
-    /// <summary>
-    /// 全局单例实例。若不存在则自动创建。
-    /// </summary>
-    private static YooAssetsLoad _instance;
-    public static YooAssetsLoad Instance
-    {
-        get
-        {
-            if (_instance == null)
-            {
-                _instance = FindObjectOfType<YooAssetsLoad>();
-                if (_instance == null)
-                {
-                    GameObject go = new GameObject(nameof(YooAssetsLoad));
-                    _instance = go.AddComponent<YooAssetsLoad>();
-                }
-            }
-            return _instance;
-        }
-        private set
-        {
-            _instance = value;
-        }
-    }
-
     /// <summary>
     /// 默认资源包名称。如果调用方法时未提供包名，则使用此值。
     /// </summary>
@@ -63,19 +38,6 @@ public class YooAssetsLoad : MonoBehaviour
     /// </summary>
     public event Action<string> OnDownloadError;
     #endregion
-
-    private void Awake()
-    {
-        if (_instance == null)
-        {
-            _instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else if (_instance != this)
-        {
-            Destroy(gameObject);
-        }
-    }
 
     private void Start()
     {
@@ -107,6 +69,85 @@ public class YooAssetsLoad : MonoBehaviour
 
         return package;
     }
+
+    #region 版本请求
+
+    /// <summary>
+    /// 请求指定资源包的版本信息（内部启动协程，通过回调返回结果）。
+    /// </summary>
+    /// <param name="onSuccess">成功回调，参数为版本号字符串。</param>
+    /// <param name="onError">失败回调，参数为错误信息。</param>
+    /// <param name="packageName">资源包名称，默认为 DefaultPackageName。</param>
+    public void RequestPackageVersion(string packageName,Action<string> onSuccess, Action<string> onError = null)
+    {
+        StartCoroutine(RequestPackageVersionCoroutine(packageName,onSuccess, onError));
+    }
+
+    /// <summary>
+    /// 请求资源包版本的协程（也可由外部通过 StartCoroutine 直接调用）。
+    /// </summary>
+    public IEnumerator RequestPackageVersionCoroutine(string packageName ,Action<string> onSuccess,Action<string> onError = null)
+    {
+        packageName = ResolvePackageName(packageName);
+        if (string.IsNullOrEmpty(packageName))
+        {
+            onError?.Invoke("Package name is null or empty.");
+            yield break;
+        }
+
+        var package = GetPackage(packageName);
+        if (package == null)
+        {
+            onError?.Invoke($"Package '{packageName}' not found.");
+            yield break;
+        }
+
+        var operation = package.RequestPackageVersionAsync();
+        yield return operation;
+
+        if (operation.Status == EOperationStatus.Succeeded)
+        {
+            Debug.Log($"[{nameof(YooAssetsLoad)}] Package '{packageName}' version: {operation.PackageVersion}");
+            onSuccess?.Invoke(operation.PackageVersion);
+        }
+        else
+        {
+            Debug.LogError($"[{nameof(YooAssetsLoad)}] Request package version failed: {operation.Error}");
+            onError?.Invoke(operation.Error);
+        }
+    }
+
+    /// <summary>
+    /// 内部辅助方法：请求版本并加载资源清单。
+    /// </summary>
+    private IEnumerator RequestVersionAndLoadManifest(ResourcePackage package, string packageName)
+    {
+        string version = null;
+        string error = null;
+
+        yield return RequestPackageVersionCoroutine(
+            onSuccess: v => version = v,
+            onError: e => error = e,
+            packageName: packageName
+        );
+
+        if (!string.IsNullOrEmpty(error) || string.IsNullOrEmpty(version))
+            yield break;
+
+        var manifestOperation = package.LoadPackageManifestAsync(new LoadPackageManifestOptions(version, 60));
+        yield return manifestOperation;
+
+        if (manifestOperation.Status == EOperationStatus.Succeeded)
+        {
+            Debug.Log($"[{nameof(YooAssetsLoad)}] Package '{packageName}' manifest loaded for version '{version}'.");
+        }
+        else
+        {
+            Debug.LogError($"[{nameof(YooAssetsLoad)}] Load package manifest failed: {manifestOperation.Error}");
+        }
+    }
+
+    #endregion
 
     #region 初始化资源包
     /// <summary>
@@ -151,28 +192,7 @@ public class YooAssetsLoad : MonoBehaviour
             yield break;
         }
 
-        //  获取资源版本
-        var versionOperation = package.RequestPackageVersionAsync();
-        yield return versionOperation;
-
-        if (versionOperation.Status != EOperationStatus.Succeeded)
-        {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Request package version failed: {versionOperation.Error}");
-            yield break;
-        }
-
-        //  更新资源清单
-        var manifestOperation = package.LoadPackageManifestAsync(new LoadPackageManifestOptions(versionOperation.PackageVersion, 60));
-        yield return manifestOperation;
-
-        if (manifestOperation.Status == EOperationStatus.Succeeded)
-        {
-            Debug.Log($"[{nameof(YooAssetsLoad)}] Remote package '{packageName}' manifest updated.");
-        }
-        else
-        {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Load package manifest failed: {manifestOperation.Error}");
-        }
+        yield return RequestVersionAndLoadManifest(package, packageName);
     }
 
     /// <summary>
@@ -211,32 +231,7 @@ public class YooAssetsLoad : MonoBehaviour
             yield break;
         }
 
-        // 获取资源版本
-        var versionOperation = package.RequestPackageVersionAsync();
-        yield return versionOperation;
-
-        if (versionOperation.Status == EOperationStatus.Succeeded)
-        {
-            Debug.Log($"[{nameof(YooAssetsLoad)}] Package '{packageName}' version '{versionOperation.PackageVersion}' loaded.");
-        }
-        else
-        {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Request package version failed: {versionOperation.Error}");
-            yield break;
-        }
-
-        // 更新资源策略
-        var manifestOperation = package.LoadPackageManifestAsync(new LoadPackageManifestOptions(versionOperation.PackageVersion, 60));
-        yield return manifestOperation;
-
-        if (manifestOperation.Status == EOperationStatus.Succeeded)
-        {
-            Debug.Log($"[{nameof(YooAssetsLoad)}] Package '{packageName}' manifest loaded for version '{versionOperation.PackageVersion}'.");
-        }
-        else
-        {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Load package manifest failed: {manifestOperation.Error}");
-        }
+        yield return RequestVersionAndLoadManifest(package, packageName);
     }
 
     /// <summary>
@@ -290,28 +285,7 @@ public class YooAssetsLoad : MonoBehaviour
             yield break;
         }
 
-        //  获取资源版本
-        var versionOperation = package.RequestPackageVersionAsync();
-        yield return versionOperation;
-
-        if (versionOperation.Status != EOperationStatus.Succeeded)
-        {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Request package version failed: {versionOperation.Error}");
-            yield break;
-        }
-
-        //  更新资源清单
-        var manifestOperation = package.LoadPackageManifestAsync(new LoadPackageManifestOptions(versionOperation.PackageVersion, 60));
-        yield return manifestOperation;
-
-        if (manifestOperation.Status == EOperationStatus.Succeeded)
-        {
-            Debug.Log($"[{nameof(YooAssetsLoad)}] Remote package '{packageName}' manifest updated.");
-        }
-        else
-        {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Load package manifest failed: {manifestOperation.Error}");
-        }
+        yield return RequestVersionAndLoadManifest(package, packageName);
 
         // 下载资源
         yield return DownloadPackageResources(package);
@@ -441,9 +415,9 @@ public class YooAssetsLoad : MonoBehaviour
     /// <param name="options">实例化选项，如父对象、位置、旋转和缩放。</param>
     /// <param name="onInstantiated">实例化完成后的回调。</param>
     /// <param name="packageName">资源包名称，默认为 DefaultPackageName。</param>
-    public void LoadResources(string location, YooAsset.InstantiateOptions options, Action<GameObject> onInstantiated = null, string packageName = null)
+    public void LoadPrefab(string location, YooAsset.InstantiateOptions options, Action<GameObject> onInstantiated = null, string packageName = null)
     {
-        StartCoroutine(ELoadResourcesAndInstantiate(location, options, onInstantiated, packageName));
+        StartCoroutine(ELoadPrefab(location, options, onInstantiated, packageName));
     }
 
     /// <summary>
@@ -454,7 +428,7 @@ public class YooAssetsLoad : MonoBehaviour
     /// <param name="onInstantiated">实例化完成后的回调。</param>
     /// <param name="packageName">资源包名称。</param>
     /// <returns>加载并实例化的协程。</returns>
-    private IEnumerator ELoadResourcesAndInstantiate(string location, YooAsset.InstantiateOptions options, Action<GameObject> onInstantiated = null, string packageName = null)
+    private IEnumerator ELoadPrefab(string location, YooAsset.InstantiateOptions options, Action<GameObject> onInstantiated = null, string packageName = null)
     {
         var package = GetPackage(packageName);
         if (package == null)
