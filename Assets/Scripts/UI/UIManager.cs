@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using YooAsset;
 
 public class UIManager : SingletonMono<UIManager>
 {
@@ -51,11 +52,9 @@ public class UIManager : SingletonMono<UIManager>
     /// 初始化所有UI面板的配置信息
     /// </summary>
     /// <returns></returns>
-    public IEnumerator InitUIConfig()
+    public IEnumerator InitUIConfig(EPlayMode _playMode)
     {
-        //TODO:添加服务器的网址
-        // yield return YooAssetsLoad.Instance.InitializeRemotePackageCoroutine("UI","URL");
-        yield return YooAssetsLoad.Instance.InitializeEditorPackageCoroutine("UI");
+        yield return YooAssetsLoad.Instance.InitializePackageCoroutine("UI", _playMode);
         yield return YooAssetsLoad.Instance.ELoadResources<TextAsset>("UIConfig", (textAssets) =>
         {
             var lists = UIConfig.GetAllConfigs(textAssets.text);

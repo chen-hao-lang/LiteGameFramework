@@ -78,15 +78,15 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
     /// <param name="onSuccess">成功回调，参数为版本号字符串。</param>
     /// <param name="onError">失败回调，参数为错误信息。</param>
     /// <param name="packageName">资源包名称，默认为 DefaultPackageName。</param>
-    public void RequestPackageVersion(string packageName,Action<string> onSuccess, Action<string> onError = null)
+    public void RequestPackageVersion(string packageName, Action<string> onSuccess, Action<string> onError = null)
     {
-        StartCoroutine(RequestPackageVersionCoroutine(packageName,onSuccess, onError));
+        StartCoroutine(RequestPackageVersionCoroutine(packageName, onSuccess, onError));
     }
 
     /// <summary>
     /// 请求资源包版本的协程（也可由外部通过 StartCoroutine 直接调用）。
     /// </summary>
-    public IEnumerator RequestPackageVersionCoroutine(string packageName ,Action<string> onSuccess,Action<string> onError = null)
+    public IEnumerator RequestPackageVersionCoroutine(string packageName, Action<string> onSuccess, Action<string> onError = null)
     {
         packageName = ResolvePackageName(packageName);
         if (string.IsNullOrEmpty(packageName))
@@ -150,15 +150,11 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
     #endregion
 
     #region 初始化资源包
-    /// <summary>
-    /// 使用编辑器模拟模式异步初始化资源包。
-    /// </summary>
-    /// <param name="packageName">资源包名称。</param>
-    /// <returns>初始化协程。</returns>
-    public IEnumerator InitializeEditorPackageCoroutine(string packageName = null)
+    //根据不同模式调用不用模式的初始化方式
+    public IEnumerator InitializePackageCoroutine(string _packageName, EPlayMode _ePlayMode = EPlayMode.EditorSimulateMode,string _hostServer = null,bool useBuiltin = false)
     {
-        packageName = ResolvePackageName(packageName);
-        if (string.IsNullOrEmpty(packageName))
+        _packageName = ResolvePackageName(_packageName);
+        if (string.IsNullOrEmpty(_packageName))
             yield break;
 
         if (!IsYooAssetsInitialized)
@@ -167,10 +163,57 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
             IsYooAssetsInitialized = true;
         }
 
-        var package = YooAssets.CreatePackage(packageName);
-        _packageCache[packageName] = package;
+        // 检查当前包是否已经创建
+        if (_packageCache.ContainsKey(_packageName))
+        {
+            Debug.LogWarning($"[{nameof(YooAssetsLoad)}] Package '{_packageName}' already initialized, skip.");
+            yield break;
+        }
 
-        var buildResult = EditorSimulateBuildInvoker.Build(packageName, (int)EBundleType.VirtualAssetBundle);
+        switch(_ePlayMode)
+        {
+            case EPlayMode.EditorSimulateMode:
+                yield return InitializeEditorPackageCoroutine(_packageName);
+                yield break;
+            case EPlayMode.OfflinePlayMode:
+                yield return InitializeOfflinePackageCoroutine(_packageName);
+                yield break;
+            case EPlayMode.HostPlayMode:
+                yield return InitializeRemotePackageCoroutine(_packageName,_hostServer,useBuiltin);
+                yield break;
+            default:
+                Debug.LogError($"暂时不支持这种初始化包的模型：{_ePlayMode}");
+                yield break;
+        }
+    }
+
+    /// <summary>
+    /// 使用编辑器模拟模式异步初始化资源包。
+    /// </summary>
+    /// <param name="_packageName">资源包名称。</param>
+    /// <returns>初始化协程。</returns>
+    public IEnumerator InitializeEditorPackageCoroutine(string _packageName = null)
+    {
+        _packageName = ResolvePackageName(_packageName);
+        if (string.IsNullOrEmpty(_packageName))
+            yield break;
+
+        if (!IsYooAssetsInitialized)
+        {
+            YooAssets.Initialize();
+            IsYooAssetsInitialized = true;
+        }
+
+        if (_packageCache.ContainsKey(_packageName))
+        {
+            Debug.LogWarning($"[{nameof(YooAssetsLoad)}] Package '{_packageName}' already exists, skip editor initialization.");
+            yield break;
+        }
+
+        var package = YooAssets.CreatePackage(_packageName);
+        _packageCache[_packageName] = package;
+
+        var buildResult = EditorSimulateBuildInvoker.Build(_packageName, (int)EBundleType.VirtualAssetBundle);
         var packageRoot = buildResult.PackageRootDirectory;
 
         var fileSystemParams = FileSystemParameters.CreateDefaultEditorFileSystemParameters(packageRoot);
@@ -184,24 +227,24 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
 
         if (initOperation.Status == EOperationStatus.Succeeded)
         {
-            Debug.Log($"[{nameof(YooAssetsLoad)}] Package '{packageName}' initialized.");
+            Debug.Log($"[{nameof(YooAssetsLoad)}] Package '{_packageName}' initialized.");
         }
         else
         {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Package '{packageName}' initialize failed: {initOperation.Error}");
+            Debug.LogError($"[{nameof(YooAssetsLoad)}] Package '{_packageName}' initialize failed: {initOperation.Error}");
             yield break;
         }
 
-        yield return RequestVersionAndLoadManifest(package, packageName);
+        yield return RequestVersionAndLoadManifest(package, _packageName);
     }
 
     /// <summary>
     /// 使用离线模式（OfflinePlayMode）初始化资源包，读取 StreamingAssets 下的真包。
     /// </summary>
-    public IEnumerator InitializeOfflinePackageCoroutine(string packageName = null)
+    public IEnumerator InitializeOfflinePackageCoroutine(string _packageName = null)
     {
-        packageName = ResolvePackageName(packageName);
-        if (string.IsNullOrEmpty(packageName))
+        _packageName = ResolvePackageName(_packageName);
+        if (string.IsNullOrEmpty(_packageName))
             yield break;
 
         if (!IsYooAssetsInitialized)
@@ -210,8 +253,14 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
             IsYooAssetsInitialized = true;
         }
 
-        var package = YooAssets.CreatePackage(packageName);
-        _packageCache[packageName] = package;
+        if (_packageCache.ContainsKey(_packageName))
+        {
+            Debug.LogWarning($"[{nameof(YooAssetsLoad)}] Package '{_packageName}' already exists, skip offline initialization.");
+            yield break;
+        }
+
+        var package = YooAssets.CreatePackage(_packageName);
+        _packageCache[_packageName] = package;
 
         var fileSystemParams = FileSystemParameters.CreateDefaultBuiltinFileSystemParameters();
 
@@ -223,29 +272,29 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
 
         if (initOperation.Status == EOperationStatus.Succeeded)
         {
-            Debug.Log($"[{nameof(YooAssetsLoad)}] Package '{packageName}' initialized (Offline Mode).");
+            Debug.Log($"[{nameof(YooAssetsLoad)}] Package '{_packageName}' initialized (Offline Mode).");
         }
         else
         {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Package '{packageName}' initialize failed: {initOperation.Error}");
+            Debug.LogError($"[{nameof(YooAssetsLoad)}] Package '{_packageName}' initialize failed: {initOperation.Error}");
             yield break;
         }
 
-        yield return RequestVersionAndLoadManifest(package, packageName);
+        yield return RequestVersionAndLoadManifest(package, _packageName);
     }
 
     /// <summary>
     /// 使用远端托管模式初始化资源包，并尝试请求并更新资源清单。
     /// </summary>
-    /// <param name="packageName">资源包名称，默认为 DefaultPackageName。</param>
-    /// <param name="hostServer">远端资源服务器地址。</param>
-    /// <param name="useBuiltin">是否使用 StreamingAssets 内置文件系统（首包资源为 true，纯热更新包为 false）。</param>
+    /// <param name="_packageName">资源包名称，默认为 DefaultPackageName。</param>
+    /// <param name="_hostServer">远端资源服务器地址。</param>
+    /// <param name="_useBuiltin">是否使用 StreamingAssets 内置文件系统（首包资源为 true，纯热更新包为 false）。</param>
     /// <returns>初始化协程。</returns>
-    public IEnumerator InitializeRemotePackageCoroutine(string packageName, string hostServer, bool useBuiltin = true)
+    public IEnumerator InitializeRemotePackageCoroutine(string _packageName, string _hostServer, bool _useBuiltin = true)
     {
         // 解析资源包名称，如果未提供则使用默认包名
-        packageName = ResolvePackageName(packageName);
-        if (string.IsNullOrEmpty(packageName) || string.IsNullOrEmpty(hostServer))
+        _packageName = ResolvePackageName(_packageName);
+        if (string.IsNullOrEmpty(_packageName) || string.IsNullOrEmpty(_hostServer))
             yield break;
 
         // 初始化 YooAssets（如果尚未初始化）
@@ -255,12 +304,18 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
             IsYooAssetsInitialized = true;
         }
 
+        if (_packageCache.ContainsKey(_packageName))
+        {
+            Debug.LogWarning($"[{nameof(YooAssetsLoad)}] Package '{_packageName}' already exists, skip remote initialization.");
+            yield break;
+        }
+
         // 创建资源包并缓存
-        var package = YooAssets.CreatePackage(packageName);
-        _packageCache[packageName] = package;
+        var package = YooAssets.CreatePackage(_packageName);
+        _packageCache[_packageName] = package;
 
         // 配置远端资源服务器和文件系统参数
-        var remoteServices = new RmoteServices(hostServer, null);
+        var remoteServices = new RmoteServices(_hostServer, null);
         // 创建缓存文件系统参数
         var cacheFileSystemParams = FileSystemParameters.CreateDefaultSandboxFileSystemParameters(remoteServices);
         // 创建远端模式初始化参数
@@ -270,7 +325,7 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
         };
 
         // 仅当需要内置资源时，才配置 StreamingAssets 文件系统
-        if (useBuiltin)
+        if (_useBuiltin)
         {
             createParameters.BuiltinFileSystemParameters = FileSystemParameters.CreateDefaultBuiltinFileSystemParameters();
         }
@@ -281,11 +336,11 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
 
         if (initOperation.Status != EOperationStatus.Succeeded)
         {
-            Debug.LogError($"[{nameof(YooAssetsLoad)}] Remote package '{packageName}' initialize failed: {initOperation.Error}");
+            Debug.LogError($"[{nameof(YooAssetsLoad)}] Remote package '{_packageName}' initialize failed: {initOperation.Error}");
             yield break;
         }
 
-        yield return RequestVersionAndLoadManifest(package, packageName);
+        yield return RequestVersionAndLoadManifest(package, _packageName);
 
         // 下载资源
         yield return DownloadPackageResources(package);
