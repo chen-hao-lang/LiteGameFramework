@@ -5,18 +5,16 @@ using UnityEngine;
 public class FSMDownloadPackageOver : IState
 {
     private StateMachine stateMachine;
-    private IState to;
 
-    public void Create(StateMachine _machine, IState _to = null)
+    public FSMDownloadPackageOver(StateMachine _machine)
     {
         stateMachine = _machine;
-        to = _to;
     }
 
     public void OnEnter()
     {
         //TODO:
-        stateMachine.SetState(to);
+        // stateMachine.SetState(to);
     }
 
     public void OnExit()

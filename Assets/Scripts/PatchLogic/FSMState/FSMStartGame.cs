@@ -5,12 +5,10 @@ using UnityEngine;
 public class FSMStartGame : IState
 {
     private StateMachine stateMachine;
-    private IState to;
 
-    public void Create(StateMachine _machine, IState _to = null)
+    public FSMStartGame(StateMachine _machine)
     {
         stateMachine = _machine;
-        to = _to;
     }
 
     public void OnEnter()

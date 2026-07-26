@@ -15,7 +15,7 @@ public class EventManager : Singleton<EventManager>
         isInit = true;
     }
 
-    public static void AddListener<T>(object _suber, Delegate _handler) where T : Delegate
+    public static void AddListener<T>(object _suber, Action<T> _handler) where T : struct, IEvent
     {
         if (_handler == null)
             throw new ArgumentNullException(nameof(_handler));
@@ -48,7 +48,7 @@ public class EventManager : Singleton<EventManager>
     }
 
     /// <summary>触发事件 T，传递参数给所有订阅者</summary>
-    public static void Invoke<T>(params object[] args) where T : Delegate
+    public static void Invoke<T>(T _args) where T : struct, IEvent
     {
         Type eventType = typeof(T);
         if (!Instance.listener.TryGetValue(eventType, out var handlerList))
@@ -62,7 +62,7 @@ public class EventManager : Singleton<EventManager>
         {
             try
             {
-                handler?.DynamicInvoke(args);
+                ((Action<T>)handler)(_args);
             }
             catch (Exception e)
             {
@@ -71,8 +71,13 @@ public class EventManager : Singleton<EventManager>
         }
     }
 
-    /// <summary>移除指定订阅者的指定处理器</summary>
-    public static void RemoveListener<T>(object _suber, Delegate _handler) where T : Delegate
+    /// <summary>
+    /// 移除指定订阅者身上指定的订阅的事件
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="_suber">订阅者</param>
+    /// <param name="_handler">指定的订阅事件</param>
+    public static void RemoveListener<T>(object _suber, Action<T> _handler) where T : struct, IEvent
     {
         if (_suber == null || _handler == null) return;
 

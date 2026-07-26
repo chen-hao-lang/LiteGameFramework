@@ -3,12 +3,10 @@ using UnityEngine;
 public class FSMRequestPackageVersion : IState
 {
     private StateMachine stateMachine;
-    private IState to;
 
-    public void Create(StateMachine _machine, IState _to = null)
+    public FSMRequestPackageVersion(StateMachine _machine)
     {
         stateMachine = _machine;
-        to = _to;
     }
 
     public void Tick()
@@ -20,17 +18,16 @@ public class FSMRequestPackageVersion : IState
     {
         var packageName = (string)stateMachine.GetBlackboardData("PackageName");
         YooAssetsLoad.Instance.RequestPackageVersion(
-            onSuccess: (version) =>
+            _success: (version) =>
             {
                 stateMachine.AddBlackboardData("PackageVersion", version);
-                stateMachine.SetState(to);
             },
-            onError: (error) =>
+            _fail: (error) =>
             {
                 Debug.LogError($"[FSMRequestPackageVersion] Request version failed: {error}");
                 //TODO: 触发版本请求失败事件，可进入错误状态或重试
             },
-            packageName: packageName
+            _packageName: packageName
         );
     }
 

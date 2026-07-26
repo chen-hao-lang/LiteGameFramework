@@ -1,20 +1,19 @@
 using System.Collections;
-using UnityEngine;
 using YooAsset;
 
 public class FSMInitializePackage : IState
 {
     private StateMachine stateMachine;
-    private IState to;
 
-    public void Create(StateMachine _machine, IState _to = null)
+    public FSMInitializePackage(StateMachine _machine)
     {
         stateMachine = _machine;
-        to = _to;
     }
 
     public void OnEnter()
     {
+        //TODO:调用函数InitPackage
+        stateMachine.AddBlackboardData("InitComplete",true);
     }
 
     public void OnExit()
@@ -30,63 +29,19 @@ public class FSMInitializePackage : IState
         var playMode = (EPlayMode)stateMachine.GetBlackboardData("PlayMode");
         var packageName = (string)stateMachine.GetBlackboardData("PackageName");
 
-        if (!YooAssets.TryGetPackage(packageName, out var package))
+        switch (playMode)
         {
-            package = YooAssets.CreatePackage(packageName);
-        }
-
-        InitializePackageOperation initializationOperation = null;
-        if (playMode == EPlayMode.EditorSimulateMode)
-        {
-            var buildResult = EditorSimulateBuildInvoker.Build(packageName, (int)EBundleType.VirtualAssetBundle);
-            var packageRoot = buildResult.PackageRootDirectory;
-
-            var fileSystemParams = FileSystemParameters.CreateDefaultEditorFileSystemParameters(packageRoot);
-            var createParameters = new EditorSimulateModeOptions();
-            createParameters.EditorFileSystemParameters.AddParameter(EFileSystemParameter.VirtualWebglMode, true);
-            createParameters.EditorFileSystemParameters.AddParameter(EFileSystemParameter.VirtualDownloadMode, true);
-            createParameters.EditorFileSystemParameters.AddParameter(EFileSystemParameter.VirtualDownloadSpeed, 1024 * 1000);
-            createParameters.EditorFileSystemParameters.AddParameter(EFileSystemParameter.AsyncSimulateMinFrame, 5);
-            createParameters.EditorFileSystemParameters.AddParameter(EFileSystemParameter.AsyncSimulateMaxFrame, 10);
-            initializationOperation = package.InitializePackageAsync(createParameters);
-        }
-
-        if (playMode == EPlayMode.OfflinePlayMode)
-        {
-            var createParameters = new OfflinePlayModeOptions();
-            createParameters.BuiltinFileSystemParameters = FileSystemParameters.CreateDefaultBuiltinFileSystemParameters();
-            initializationOperation = package.InitializePackageAsync(createParameters);
-        }
-
-        if (playMode == EPlayMode.HostPlayMode)
-        {
-            string defaultHostServer = GetHostServerURL();
-            string fallbackHostServer = GetHostServerURL();
-            IRemoteService remoteService = new RmoteServices(defaultHostServer, fallbackHostServer);
-            var createParameters = new HostPlayModeOptions();
-            createParameters.BuiltinFileSystemParameters = FileSystemParameters.CreateDefaultBuiltinFileSystemParameters();
-            createParameters.BuiltinFileSystemParameters.AddParameter(EFileSystemParameter.CopyBuiltinPackageManifest, true);
-            createParameters.CacheFileSystemParameters = FileSystemParameters.CreateDefaultSandboxFileSystemParameters(remoteService);
-            createParameters.CacheFileSystemParameters.AddParameter(EFileSystemParameter.DownloadMaxConcurrency, 5);
-            createParameters.CacheFileSystemParameters.AddParameter(EFileSystemParameter.DownloadMaxRequestPerFrame, 1);
-            createParameters.CacheFileSystemParameters.AddParameter(EFileSystemParameter.DownloadWatchdogTimeout, 10);
-            initializationOperation = package.InitializePackageAsync(createParameters);
-        }
-
-        yield return initializationOperation;
-
-        if (initializationOperation.Status == EOperationStatus.Succeeded)
-        {
-            stateMachine.SetState(to);
-        }
-        else
-        {
-            Debug.LogWarning($"{initializationOperation.Error}");
-            //TODO:触发初始化失败事件
+            case EPlayMode.HostPlayMode:
+                string defaultHostServer = GetHostServerURL();
+                yield return YooAssetsLoad.Instance.InitializePackageCoroutine(packageName,playMode,defaultHostServer);
+                break;
+            default:
+                yield return YooAssetsLoad.Instance.InitializePackageCoroutine(packageName, playMode);
+                break;
         }
     }
 
-    //TODO:
+    //TODO:需要改服务地址，需要的话
     private string GetHostServerURL()
     {
         string hostServerIP = "https://127.0.0.1";

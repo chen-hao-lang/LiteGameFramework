@@ -3,12 +3,10 @@ using YooAsset;
 public class FSMClearCacheBundle : IState
 {
     private StateMachine stateMachine;
-    private IState to;
 
-    public void Create(StateMachine _machine, IState _to = null)
+    public FSMClearCacheBundle(StateMachine _machine)
     {
         stateMachine = _machine;
-        to = _to;
     }
 
     public void OnEnter()
@@ -31,6 +29,6 @@ public class FSMClearCacheBundle : IState
 
     private void Operation_Completed(YooAsset.AsyncOperationBase obj)
     {
-        stateMachine.SetState(to);
+        // stateMachine.SetState(to);
     }
 }

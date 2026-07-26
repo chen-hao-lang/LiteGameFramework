@@ -6,10 +6,9 @@ public class FSMUpdatePackageMainFest : IState
     private IState to;
     private StateMachine stateMachine;
 
-    public void Create(StateMachine _machine, IState _to = null)
+    public FSMUpdatePackageMainFest(StateMachine _machine)
     {
         stateMachine = _machine;
-        to = _to;
     }
 
     public void OnEnter()
@@ -30,11 +29,11 @@ public class FSMUpdatePackageMainFest : IState
         var packageName = (string)stateMachine.GetBlackboardData("PackageName");
         var packageVersion = (string)stateMachine.GetBlackboardData("PackageVersion");
         var package = YooAssets.GetPackage(packageName);
-        var options = new LoadPackageManifestOptions(packageVersion,60);
+        var options = new LoadPackageManifestOptions(packageVersion, 60);
         var operation = package.LoadPackageManifestAsync(options);
         yield return operation;
 
-        if(operation.Status == EOperationStatus.Succeeded)
+        if (operation.Status == EOperationStatus.Succeeded)
         {
             stateMachine.SetState(to);
         }

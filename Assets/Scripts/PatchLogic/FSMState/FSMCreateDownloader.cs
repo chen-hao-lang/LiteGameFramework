@@ -4,12 +4,10 @@ using YooAsset;
 public class FSMCreateDownloader : IState
 {
     private StateMachine stateMachine;
-    private IState to;
 
-    public void Create(StateMachine _machine, IState _to = null)
+    public FSMCreateDownloader(StateMachine _machine)
     {
         stateMachine = _machine;
-        to = _to;
     }
 
     public void OnEnter()
@@ -25,6 +23,7 @@ public class FSMCreateDownloader : IState
     {
     }
 
+    //TODO:
     private void CreateDownloaded()
     {
         var packageName = (string)stateMachine.GetBlackboardData("PackageName");
@@ -38,7 +37,7 @@ public class FSMCreateDownloader : IState
         if(downloader.TotalDownloadCount == 0)
         {
             Debug.Log("没有需要下载的东西");
-            stateMachine.SetState(to);
+            // stateMachine.SetState(to);
         }
         else
         {
