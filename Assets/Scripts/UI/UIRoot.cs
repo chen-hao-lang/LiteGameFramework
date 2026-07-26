@@ -46,7 +46,7 @@ public class UIRoot : MonoBehaviour
         camera = GameObject.Find("WorldCamera");
         if (camera == null)
         {
-            camera = new GameObject("UICamera");
+            camera = new GameObject("WorldCamera");
         }
         if (camera.GetComponent<Camera>() == null)
         {
