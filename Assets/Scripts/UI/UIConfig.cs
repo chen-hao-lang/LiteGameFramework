@@ -3,7 +3,9 @@ using System;
 using Newtonsoft.Json;
 using UnityEngine;
 
-public class UIConfig
+namespace LiteGameFramework
+{
+    public class UIConfig
 {
     public EUIType uiType;
     public string packageName;
@@ -59,4 +61,5 @@ public class UIConfig
         }
         return null;
     }
+}
 }

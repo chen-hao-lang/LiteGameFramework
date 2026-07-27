@@ -2,8 +2,10 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(CanvasGroup))]
-public class BasePanel : MonoBehaviour, IPanel
+namespace LiteGameFramework
+{
+    [RequireComponent(typeof(CanvasGroup))]
+    public class BasePanel : MonoBehaviour, IPanel
 {
     private CanvasGroup canvasGroup;
     private Canvas canvas;
@@ -121,4 +123,5 @@ public class BasePanel : MonoBehaviour, IPanel
             canvas.sortingOrder = _order;
         }
     }
+}
 }

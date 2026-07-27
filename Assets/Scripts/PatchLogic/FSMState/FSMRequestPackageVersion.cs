@@ -1,6 +1,8 @@
 using UnityEngine;
 
-public class FSMRequestPackageVersion : IState
+namespace LiteGameFramework
+{
+    public class FSMRequestPackageVersion : IState
 {
     private StateMachine stateMachine;
 
@@ -21,11 +23,11 @@ public class FSMRequestPackageVersion : IState
             _success: (version) =>
             {
                 stateMachine.AddBlackboardData("PackageVersion", version);
+                stateMachine.AddBlackboardData("RequesetPackageMainFestComplete",true);
             },
             _fail: (error) =>
             {
-                Debug.LogError($"[FSMRequestPackageVersion] Request version failed: {error}");
-                //TODO: 触发版本请求失败事件，可进入错误状态或重试
+                stateMachine.MarkFailed("请求版本号", error);
             },
             _packageName: packageName
         );
@@ -35,4 +37,5 @@ public class FSMRequestPackageVersion : IState
     {
 
     }
+}
 }

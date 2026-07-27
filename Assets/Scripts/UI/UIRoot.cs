@@ -4,7 +4,9 @@ using UnityEngine.Analytics;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class UIRoot : MonoBehaviour
+namespace LiteGameFramework
+{
+    public class UIRoot : MonoBehaviour
 {
     private Camera uiCamera;
     private Camera worldCamera;
@@ -114,4 +116,5 @@ public class UIRoot : MonoBehaviour
             return GetLayersTransform(EUILayer.Normal);
         }
     }
+}
 }

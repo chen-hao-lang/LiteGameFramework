@@ -1,1 +1,4 @@
-public struct OnDownloadComplete : IEvent { }
+namespace LiteGameFramework
+{
+    public struct OnDownloadComplete : IEvent { }
+}

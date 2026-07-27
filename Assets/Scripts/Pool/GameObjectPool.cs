@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameObjectPool : SingletonMono<GameObjectPool>
+namespace LiteGameFramework
+{
+    public class GameObjectPool : SingletonMono<GameObjectPool>
 {
     /// <summary>
     /// key：预制体
@@ -202,4 +204,5 @@ public class GameObjectPool : SingletonMono<GameObjectPool>
 
         return list;
     }
+}
 }

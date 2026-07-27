@@ -1,11 +1,14 @@
-public struct OnDownloadStart : IEvent
+namespace LiteGameFramework
 {
-    public int TotalDownloadCount;
-    public long TotalDownloadBytes;
-
-    public OnDownloadStart(int _totalDownloadCount, long _totalDownloadBytes)
+    public struct OnDownloadStart : IEvent
     {
-        TotalDownloadCount = _totalDownloadCount;
-        TotalDownloadBytes = _totalDownloadBytes;
+        public int TotalDownloadCount;
+        public long TotalDownloadBytes;
+
+        public OnDownloadStart(int _totalDownloadCount, long _totalDownloadBytes)
+        {
+            TotalDownloadCount = _totalDownloadCount;
+            TotalDownloadBytes = _totalDownloadBytes;
+        }
     }
 }

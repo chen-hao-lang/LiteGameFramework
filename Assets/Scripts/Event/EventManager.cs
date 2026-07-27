@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-public class EventManager : Singleton<EventManager>
+namespace LiteGameFramework
+{
+    public class EventManager : Singleton<EventManager>
 {
     private bool isInit;
     public bool IsInit => isInit;
@@ -160,4 +162,5 @@ public class EventManager : Singleton<EventManager>
         sb.AppendLine("=========================================");
         UnityEngine.Debug.Log(sb.ToString());
     }
+}
 }

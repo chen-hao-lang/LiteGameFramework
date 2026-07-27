@@ -1,3 +1,6 @@
-public interface IEvent
+namespace LiteGameFramework
 {
+    public interface IEvent
+    {
+    }
 }

@@ -1,22 +1,19 @@
-using YooAsset;
+using System.Collections;
 
-public class FSMClearCacheBundle : IState
+namespace LiteGameFramework
 {
-    private StateMachine stateMachine;
+    public class FSMClearCacheBundle : IState
+    {
+        private StateMachine stateMachine;
 
-    public FSMClearCacheBundle(StateMachine _machine)
+        public FSMClearCacheBundle(StateMachine _machine)
     {
         stateMachine = _machine;
     }
 
     public void OnEnter()
     {
-        //TODO:
-        var packageName = stateMachine.GetBlackboardData("PackageName").ToString();
-        var package = YooAssets.GetPackage(packageName);
-        var options = new ClearCacheOptions(ClearCacheMethods.ClearUnusedBundleFiles);
-        var operation = package.ClearCacheAsync(options);
-        operation.Completed += Operation_Completed;
+        CoroutineManager.Instance.Start(ClearCache());
     }
 
     public void OnExit()
@@ -27,8 +24,16 @@ public class FSMClearCacheBundle : IState
     {
     }
 
-    private void Operation_Completed(YooAsset.AsyncOperationBase obj)
+    public IEnumerator ClearCache()
     {
-        // stateMachine.SetState(to);
+        var packageName = stateMachine.GetBlackboardData("PackageName").ToString();
+        yield return YooAssetsLoad.Instance.ClearPackageCache(packageName, _sucess: () =>
+        {
+            stateMachine.AddBlackboardData("ClearCacheBundleComplete", true);
+        }, _fail: () =>
+        {
+            stateMachine.MarkFailed("清理缓存", "清理资源缓存失败");
+        });
     }
+}
 }

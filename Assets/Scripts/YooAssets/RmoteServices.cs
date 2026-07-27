@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using YooAsset;
 
-public class RmoteServices : IRemoteService
+namespace LiteGameFramework
+{
+    public class RmoteServices : IRemoteService
 {
     private readonly string _defaultHostServer;
     private readonly string _fallbackHostServer;
@@ -24,4 +26,5 @@ public class RmoteServices : IRemoteService
             urls.Add($"{_fallbackHostServer}/{fileName}");
         return urls;
     }
+}
 }

@@ -5,7 +5,9 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using YooAsset;
 
-public class UIManager : SingletonMono<UIManager>
+namespace LiteGameFramework
+{
+    public class UIManager : SingletonMono<UIManager>
 {
     public UIRoot uiRoot;
 
@@ -161,4 +163,5 @@ public class UIManager : SingletonMono<UIManager>
             controller.ClosePanel();
         }
     }
+}
 }

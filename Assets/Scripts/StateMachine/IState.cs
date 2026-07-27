@@ -1,6 +1,9 @@
-public interface IState
+namespace LiteGameFramework
 {
-    void Tick();
-    void OnEnter();
-    void OnExit();
+    public interface IState
+    {
+        void Tick();
+        void OnEnter();
+        void OnExit();
+    }
 }

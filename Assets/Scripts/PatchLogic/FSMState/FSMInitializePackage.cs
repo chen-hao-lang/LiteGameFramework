@@ -1,7 +1,9 @@
 using System.Collections;
 using YooAsset;
 
-public class FSMInitializePackage : IState
+namespace LiteGameFramework
+{
+    public class FSMInitializePackage : IState
 {
     private StateMachine stateMachine;
 
@@ -12,8 +14,7 @@ public class FSMInitializePackage : IState
 
     public void OnEnter()
     {
-        //TODO:调用函数InitPackage
-        stateMachine.AddBlackboardData("InitComplete",true);
+        CoroutineManager.Instance.Start(InitPackage());
     }
 
     public void OnExit()
@@ -33,10 +34,22 @@ public class FSMInitializePackage : IState
         {
             case EPlayMode.HostPlayMode:
                 string defaultHostServer = GetHostServerURL();
-                yield return YooAssetsLoad.Instance.InitializePackageCoroutine(packageName,playMode,defaultHostServer);
+                yield return YooAssetsLoad.Instance.InitializePackageCoroutine(packageName, playMode, defaultHostServer, _sucess: () =>
+                {
+                    stateMachine.AddBlackboardData("InitComplete", true);
+                }, _fail: () =>
+                {
+                    stateMachine.MarkFailed("初始化资源包", "HostPlayMode 模式下初始化失败");
+                });
                 break;
             default:
-                yield return YooAssetsLoad.Instance.InitializePackageCoroutine(packageName, playMode);
+                yield return YooAssetsLoad.Instance.InitializePackageCoroutine(packageName, playMode, _sucess: () =>
+                {
+                    stateMachine.AddBlackboardData("InitComplete", true);
+                }, _fail: () =>
+                {
+                    stateMachine.MarkFailed("初始化资源包", $"模式 {playMode} 下初始化失败");
+                });
                 break;
         }
     }
@@ -67,4 +80,5 @@ public class FSMInitializePackage : IState
             return $"{hostServerIP}/CDN/PC/{appVersion}";
 #endif
     }
+}
 }

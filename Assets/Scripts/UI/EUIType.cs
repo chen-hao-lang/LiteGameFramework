@@ -1,6 +1,9 @@
-public enum EUIType
+namespace LiteGameFramework
 {
-    TestPanel01,
-    StartPanel,
-    Max
+    public enum EUIType
+    {
+        TestPanel01,
+        StartPanel,
+        Max
+    }
 }

@@ -1,8 +1,11 @@
-public struct OnDownloadError : IEvent
+namespace LiteGameFramework
 {
-    public string ErrorInfo;
-    public OnDownloadError(string _error)
+    public struct OnDownloadError : IEvent
     {
-        ErrorInfo = _error;
+        public string ErrorInfo;
+        public OnDownloadError(string _error)
+        {
+            ErrorInfo = _error;
+        }
     }
 }

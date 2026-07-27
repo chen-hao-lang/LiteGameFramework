@@ -2,10 +2,12 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using DG.Tweening;
 
-/// <summary>
-/// 动画触发时机
-/// </summary>
-public enum AnimaWhen
+namespace LiteGameFramework
+{
+    /// <summary>
+    /// 动画触发时机
+    /// </summary>
+    public enum AnimaWhen
 {
     [Tooltip("只在悬停时添加动画")]
     HoverOnly,
@@ -182,4 +184,5 @@ public class ButtonTween : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         KillAllTweens();
     }
+}
 }

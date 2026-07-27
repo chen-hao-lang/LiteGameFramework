@@ -1,12 +1,14 @@
 using UnityEngine;
 
-/// <summary>
-/// 泛型 MonoBehaviour 单例基类，继承即可获得单例特性。
-/// 自动处理 DontDestroyOnLoad、重复实例销毁、场景切换持久化、应用退出保护。
-/// 用法：public class GameManager : SingletonMono&lt;GameManager&gt; { }
-/// </summary>
-/// <typeparam name="T">子类类型，必须继承自 MonoBehaviour</typeparam>
-public abstract class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
+namespace LiteGameFramework
+{
+    /// <summary>
+    /// 泛型 MonoBehaviour 单例基类，继承即可获得单例特性。
+    /// 自动处理 DontDestroyOnLoad、重复实例销毁、场景切换持久化、应用退出保护。
+    /// 用法：public class GameManager : SingletonMono&lt;GameManager&gt; { }
+    /// </summary>
+    /// <typeparam name="T">子类类型，必须继承自 MonoBehaviour</typeparam>
+    public abstract class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
 {
     private static T _instance;
     private static readonly object _lock = new object();
@@ -80,4 +82,5 @@ public abstract class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     {
         _isApplicationQuitting = true;
     }
+}
 }

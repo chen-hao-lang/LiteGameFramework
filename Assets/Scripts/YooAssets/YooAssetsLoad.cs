@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using YooAsset;
 
-/// <summary>
-/// Singleton helper for initializing YooAssets and loading/unloading package assets.
-/// Provides simple local and remote package initialization, sync/async load, instantiate support, and resource cleanup.
-/// </summary>
-public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
+namespace LiteGameFramework
+{
+    /// <summary>
+    /// Singleton helper for initializing YooAssets and loading/unloading package assets.
+    /// Provides simple local and remote package initialization, sync/async load, instantiate support, and resource cleanup.
+    /// </summary>
+    public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
 {
     /// <summary>
     /// 默认资源包名称。如果调用方法时未提供包名，则使用此值。
@@ -109,6 +111,49 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
         {
             Debug.LogError($"[{nameof(YooAssetsLoad)}] Request package version failed: {operation.Error}");
             _fail?.Invoke(operation.Error);
+        }
+    }
+
+    /// <summary>
+    /// 更新指定资源包的清单信息。
+    /// 该方法会根据传入的包名和版本号去请求并刷新资源包的 manifest，
+    /// 适用于热更新前或资源配置变更后重新同步包信息的场景。
+    /// </summary>
+    /// <param name="_packageName">目标资源包名称；为空时会使用默认包名。</param>
+    /// <param name="_version">要加载的资源包版本号。</param>
+    /// <param name="_sucess">更新成功时执行的回调。</param>
+    /// <param name="_fail">更新失败时执行的回调。</param>
+    /// <returns>协程枚举，供 Unity 的协程系统执行。</returns>
+    public IEnumerator UpdatePackageMainFest(string _packageName, string _version, Action _sucess = null, Action _fail = null)
+    {
+        _packageName = ResolvePackageName(_packageName);
+        if (string.IsNullOrEmpty(_packageName))
+        {
+            _fail?.Invoke();
+            Debug.LogError($"你输入的包名是个空值：{_packageName}");
+            yield break;
+        }
+
+        var package = GetPackage(_packageName);
+        if (package == null)
+        {
+            _fail?.Invoke();
+            Debug.LogError($"你需要获取的包不存在：{_packageName}");
+            yield break;
+        }
+
+        var option = new LoadPackageManifestOptions(_version, 60);
+        var operation = package.LoadPackageManifestAsync(option);
+
+        if (operation.Status == EOperationStatus.Succeeded)
+        {
+            Debug.Log($"成功更新包：{_packageName} 的清单信息");
+            _sucess?.Invoke();
+        }
+        else
+        {
+            Debug.LogError($"更新包：{_packageName} 的信息失败，失败原因：{operation.Error}");
+            _fail?.Invoke();
         }
     }
 
@@ -378,8 +423,24 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
     /// <param name="package">目标资源包。</param>
     /// <param name="downloaderOptions">下载器选项，为 null 时使用默认值（最大并发数3，失败重试次数3）。</param>
     /// <returns>下载过程协程。</returns>
-    public IEnumerator DownloadPackageResources(ResourcePackage package, ResourceDownloaderOptions? downloaderOptions = null)
+    public IEnumerator DownloadPackageResources(string _packageName, ResourceDownloaderOptions? downloaderOptions = null, Action _sucess = null, Action _fail = null)
     {
+        _packageName = ResolvePackageName(_packageName);
+        if (string.IsNullOrEmpty(_packageName))
+        {
+            _fail?.Invoke();
+            Debug.LogError($"你输入的包名是个空值：{_packageName}");
+            yield break;
+        }
+
+        var package = GetPackage(_packageName);
+        if (package == null)
+        {
+            _fail?.Invoke();
+            Debug.LogError($"你需要获取的包不存在：{_packageName}");
+            yield break;
+        }
+
         // 创建资源下载器
         var options = downloaderOptions ?? new ResourceDownloaderOptions(3, 3);
         var downloader = package.CreateResourceDownloader(options);
@@ -394,7 +455,7 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
         long totalDownloadBytes = downloader.TotalDownloadBytes;
 
         // 触发下载开始回调
-        EventManager.Invoke<OnDownloadStart>(new OnDownloadStart(totalDownloadCount,totalDownloadBytes));
+        EventManager.Invoke<OnDownloadStart>(new OnDownloadStart(totalDownloadCount, totalDownloadBytes));
 
         // 开启下载
         downloader.StartDownload();
@@ -404,13 +465,14 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
         {
             // 下载成功
             Debug.Log($"资源下载成功：{totalDownloadCount}个文件，{totalDownloadBytes}字节");
-            // OnDownloadComplete?.Invoke();
+            _sucess?.Invoke();
             EventManager.Invoke<OnDownloadComplete>(new OnDownloadComplete());
         }
         else
         {
             // 下载失败
             Debug.LogError("资源下载失败");
+            _fail?.Invoke();
             EventManager.Invoke<OnDownloadError>(new OnDownloadError(downloader.Error));
         }
     }
@@ -641,6 +703,39 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
     }
     #endregion
 
+    public IEnumerator ClearPackageCache(string _packageName,Action _sucess = null,Action _fail = null)
+    {
+        _packageName = ResolvePackageName(_packageName);
+        if (string.IsNullOrEmpty(_packageName))
+        {
+            _fail?.Invoke();
+            Debug.LogError($"你输入的包名是个空值：{_packageName}");
+            yield break;
+        }
+
+        var package = GetPackage(_packageName);
+        if (package == null)
+        {
+            _fail?.Invoke();
+            Debug.LogError($"你需要获取的包不存在：{_packageName}");
+            yield break;
+        }
+
+        var option = new ClearCacheOptions(ClearCacheMethods.ClearUnusedBundleFiles);
+        var operation = package.ClearCacheAsync(option);
+
+        if(operation.Status == EOperationStatus.Succeeded)
+        {
+            _sucess?.Invoke();
+            Debug.Log($"包：{_packageName} 清理成功");
+        }
+        else
+        {
+            _fail?.Invoke();
+            Debug.LogError($"包：{_packageName} 清理缓存失败，失败原因：{operation.Error}");
+        }
+    }
+
     #region 卸载
     /// <summary>
     /// 卸载包内未被引用的资源，释放冗余内存。
@@ -727,4 +822,5 @@ public class YooAssetsLoad : SingletonMono<YooAssetsLoad>
 
 
     #endregion
+}
 }

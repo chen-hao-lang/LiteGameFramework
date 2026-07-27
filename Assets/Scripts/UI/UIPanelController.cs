@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-public class UIPanelController
+namespace LiteGameFramework
+{
+    public class UIPanelController
 {
     public EUIType uiType;
     public string packageName;
@@ -102,4 +104,5 @@ public class UIPanelController
 
         panel.ClosePanel();
     }
+}
 }

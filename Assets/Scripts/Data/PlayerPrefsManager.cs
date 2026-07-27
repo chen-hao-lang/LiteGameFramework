@@ -1,11 +1,13 @@
 using UnityEngine;
 
-/// <summary>
-/// PlayerPrefs 数据存储管理类
-/// 封装常用的数据存取操作，提供异常处理和默认值支持
-/// 注意：所有方法需在主线程调用
-/// </summary>
-public static class PlayerPrefsManager
+namespace LiteGameFramework
+{
+    /// <summary>
+    /// PlayerPrefs 数据存储管理类
+    /// 封装常用的数据存取操作，提供异常处理和默认值支持
+    /// 注意：所有方法需在主线程调用
+    /// </summary>
+    public static class PlayerPrefsManager
 {
     #region 基础类型存储 (int/float/string)
     /// <summary>
@@ -200,4 +202,5 @@ public static class PlayerPrefsManager
         }
     }
     #endregion
+}
 }

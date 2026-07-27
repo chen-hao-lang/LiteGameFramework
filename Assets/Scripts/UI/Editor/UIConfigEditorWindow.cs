@@ -6,11 +6,13 @@ using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>
-/// UI配置编辑器窗口 —— 用于编辑 UIConfigJson 列表的JSON配置文件
-/// 布局：顶部文件选择框 | 左侧面板列表 | 右侧配置详情
-/// </summary>
-public class UIConfigEditorWindow : EditorWindow
+namespace LiteGameFramework
+{
+    /// <summary>
+    /// UI配置编辑器窗口 —— 用于编辑 UIConfigJson 列表的JSON配置文件
+    /// 布局：顶部文件选择框 | 左侧面板列表 | 右侧配置详情
+    /// </summary>
+    public class UIConfigEditorWindow : EditorWindow
 {
     // ========== 文件选择 ==========
     private TextAsset jsonFile;
@@ -365,4 +367,5 @@ public class UIConfigEditorWindow : EditorWindow
         AssetDatabase.Refresh();
         Debug.Log($"<color=green>[UIConfigEditor] EUIType.cs 已更新，包含 {typeNames.Count} 个类型</color>");
     }
+}
 }

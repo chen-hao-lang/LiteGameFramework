@@ -2,10 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
-/// <summary>
-/// 容器入场动画类型
-/// </summary>
-public enum ContainerAnimType
+namespace LiteGameFramework
+{
+    /// <summary>
+    /// 容器入场动画类型
+    /// </summary>
+    public enum ContainerAnimType
 {
     [Tooltip("从0缩放到1")]
     Scale,
@@ -417,4 +419,5 @@ public class ContainerTween : MonoBehaviour
     {
         Stop();
     }
+}
 }

@@ -1,10 +1,12 @@
-/// <summary>
-/// 泛型单例基类（非 MonoBehaviour），继承即可获得单例特性。
-/// 线程安全，采用双重检查锁定（DCL）模式。
-/// 用法：public class MyManager : Singleton<MyManager> { }
-/// </summary>
-/// <typeparam name="T">子类类型，必须具有无参构造函数</typeparam>
-public abstract class Singleton<T> where T : class, new()
+namespace LiteGameFramework
+{
+    /// <summary>
+    /// 泛型单例基类（非 MonoBehaviour），继承即可获得单例特性。
+    /// 线程安全，采用双重检查锁定（DCL）模式。
+    /// 用法：public class MyManager : Singleton<MyManager> { }
+    /// </summary>
+    /// <typeparam name="T">子类类型，必须具有无参构造函数</typeparam>
+    public abstract class Singleton<T> where T : class, new()
 {
     private static T _instance;
     private static readonly object _lock = new object();
@@ -47,4 +49,5 @@ public abstract class Singleton<T> where T : class, new()
             }
         }
     }
+}
 }

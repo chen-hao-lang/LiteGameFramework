@@ -1,7 +1,8 @@
 using System.Collections;
-using YooAsset;
 
-public class FSMUpdatePackageMainFest : IState
+namespace LiteGameFramework
+{
+    public class FSMUpdatePackageMainFest : IState
 {
     private IState to;
     private StateMachine stateMachine;
@@ -13,7 +14,7 @@ public class FSMUpdatePackageMainFest : IState
 
     public void OnEnter()
     {
-        //TODO:
+        CoroutineManager.Instance.Start(UpdateMainfest());
     }
 
     public void OnExit()
@@ -28,18 +29,14 @@ public class FSMUpdatePackageMainFest : IState
     {
         var packageName = (string)stateMachine.GetBlackboardData("PackageName");
         var packageVersion = (string)stateMachine.GetBlackboardData("PackageVersion");
-        var package = YooAssets.GetPackage(packageName);
-        var options = new LoadPackageManifestOptions(packageVersion, 60);
-        var operation = package.LoadPackageManifestAsync(options);
-        yield return operation;
-
-        if (operation.Status == EOperationStatus.Succeeded)
+        yield return YooAssetsLoad.Instance.UpdatePackageMainFest(packageName, packageVersion,
+        _sucess: () =>
         {
-            stateMachine.SetState(to);
-        }
-        else
+            stateMachine.AddBlackboardData("UpdatePackageMainFestComplete",true);
+        }, _fail: () =>
         {
-            //TODO:
-        }
+            stateMachine.MarkFailed("更新资源清单", "加载 PackageManifest 失败");
+        });
     }
+}
 }

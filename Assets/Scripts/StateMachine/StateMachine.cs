@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class StateMachine
+namespace LiteGameFramework
+{
+    public class StateMachine
 {
     private IState currentState;
 
@@ -131,4 +133,16 @@ public class StateMachine
             return null;
         }
     }
+
+    /// <summary>
+    /// 标记热更新流程失败，同时记录失败步骤和错误信息。
+    /// 配合 AddAnyTransition + FSMPatchFailed 使用。
+    /// </summary>
+    public void MarkFailed(string step, string message)
+    {
+        AddBlackboardData("PatchFailed", true);
+        AddBlackboardData("PatchErrorStep", step);
+        AddBlackboardData("PatchErrorMessage", message);
+    }
+}
 }
